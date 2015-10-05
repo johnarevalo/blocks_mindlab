@@ -25,7 +25,7 @@ class MainLoop(main_loop.MainLoop):
 
 class Experiment(object):
 
-    def __init__(self, batch_size, model_name, train_stream, dev_stream):
+    def __init__(self, model_name, train_stream, dev_stream):
         self.model_name = model_name
         self.monitored_vars = []
         self.extensions = []
@@ -42,12 +42,7 @@ class Experiment(object):
     def set_adam(self):
         self.step_rules.append(Adam())
 
-    def set_mlp(self, mlp):
-        self.mlp = mlp
-
-    def initialize_layers(self, w_inits, b_inits, bricks=None):
-        if bricks==None:
-            bricks=self.mlp.linear_transformations
+    def initialize_layers(self, w_inits, b_inits, bricks):
         for i, brick in enumerate(bricks):
             brick.weights_init = Uniform(width=w_inits[i])
             if b_inits[i] == 0:
@@ -66,11 +61,7 @@ class Experiment(object):
             y.flatten(), y_hat.flatten() > threshold)
         self.monitored_vars.extend([f_score, tp, tn, fp, fn])
 
-    def monitor_w_norms(self, bricks=None, weights=[], owner=None):
-        if bricks==None:
-            bricks=self.mlp.linear_transformations
-        if owner==None:
-            owner=self.mlp
+    def monitor_w_norms(self, bricks=[], weights=[], owner=None):
         for i, brick in enumerate(bricks):
             var = brick.W.norm(2, axis=0).max()
             brick.add_auxiliary_variable(var, name='W_max_norm_' + brick.name)
@@ -80,16 +71,13 @@ class Experiment(object):
             owner.add_auxiliary_variable(var, name='W_max_norm_weight_' + str(i))
             self.monitored_vars.append(var)
 
-    def monitor_activations(self):
+    def monitor_activations(self, mlp):
         var_filter = VariableFilter(theano_name_regex='linear.*output')
-        outputs = var_filter(cg.variables)
+        outputs = var_filter(self.cg.variables)
         for i, output in enumerate(outputs):
-            self.mlp.add_auxiliary_variable(
-                output.mean(), name='mean_act_' + str(i))
-            self.mlp.add_auxiliary_variable(
-                output.mean(axis=0).max(), name='max_act_' + str(i))
-            self.mlp.add_auxiliary_variable(
-                output.mean(axis=0).min(), name='min_act_' + str(i))
+            mlp.add_auxiliary_variable(output.mean(), name='mean_act_' + str(i))
+            mlp.add_auxiliary_variable(output.mean(axis=0).max(), name='max_act_' + str(i))
+            mlp.add_auxiliary_variable(output.mean(axis=0).min(), name='min_act_' + str(i))
         self.monitored_vars.extend(mlp.auxiliary_variables)
 
     def apply_dropout(self, dropout, variables=None):
