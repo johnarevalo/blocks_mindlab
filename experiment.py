@@ -9,7 +9,7 @@ from blocks.initialization import Uniform, Constant
 from blocks.model import Model
 from blocks import main_loop
 from blocks.roles import INPUT, WEIGHT
-from ir_blocks import datasets, utils, plot
+from blocks_mindlab import utils, plot
 from fuel.utils import do_not_pickle_attributes
 
 
