@@ -7,4 +7,4 @@ SCRIPT=$1
 FOLDER=$2
 JOBS=$3
 LOGDIR=$4
-parallel --results $LOGDIR -j $JOBS $SCRIPT ::: `find $FOLDER -type f  -name "*.yaml"` &
+parallel --results $LOGDIR -j $JOBS $SCRIPT ::: `find $FOLDER -type f  -name "*.yaml" | sort` &
