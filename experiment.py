@@ -139,12 +139,12 @@ class Experiment(object):
 
         if self.dev_stream:
             dev_monitor = DataStreamMonitoring(variables=self.monitored_vars,
-                                           before_first_epoch=True, after_epoch=True,
+                                           before_first_epoch=False, after_epoch=True,
                                            data_stream=self.dev_stream, prefix="dev")
             self.extensions.insert(0, dev_monitor)
         train_monitor = TrainingDataMonitoring(self.monitored_vars,
                                                before_first_epoch=True,
-                                               after_batch=True, prefix='tra')
+                                               after_epoch=True, prefix='tra')
         self.extensions.insert(0, train_monitor)
         self.algorithm = algorithm
 

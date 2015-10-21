@@ -4,20 +4,6 @@ from theano import tensor
 from bokeh.plotting import output_server, cursession
 from bokeh.document import Document
 
-config = None
-
-
-def get_config(filename=None, reload=False):
-    global config
-    if config is not None and not reload:
-        return config
-    if filename is None:
-        raise Exception(
-            'Configuration has not been loaded previously, filename parameter is required')
-    with open(filename) as f:
-        config = yaml.load(f)
-    return config
-
 
 def get_measures(y_true, y_pred):
     tp = (tensor.eq(y_pred + y_true, 2)).sum()
