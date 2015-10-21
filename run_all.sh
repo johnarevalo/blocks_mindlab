@@ -1,8 +1,9 @@
 #!/bin/bash
-if [ "$#" -ne 2  ]; then
-    echo "USAGE: run_all.sh [script] [directory]"
+if [ "$#" -ne 3  ]; then
+    echo "USAGE: run_all.sh [script] [directory] [n_jobs]"
     exit 1
 fi
-for conf in `find $2 -type f  -name "*.yaml"`; do 
-    python $1 $conf
-done;
+SCRIPT=$1
+FOLDER=$2
+JOBS=$3
+parallel -j $JOBS $SCRIPT ::: `find $FOLDER -type f  -name "*.yaml"`
