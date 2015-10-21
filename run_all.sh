@@ -1,9 +1,10 @@
 #!/bin/bash
-if [ "$#" -ne 3  ]; then
-    echo "USAGE: run_all.sh [script] [directory] [n_jobs]"
+if [ "$#" -ne 4  ]; then
+    echo "USAGE: run_all.sh [script] [directory] [n_jobs] [logdir]"
     exit 1
 fi
 SCRIPT=$1
 FOLDER=$2
 JOBS=$3
-parallel -j $JOBS $SCRIPT ::: `find $FOLDER -type f  -name "*.yaml"`
+LOGDIR=$4
+parallel --results $LOGDIR -j $JOBS $SCRIPT ::: `find $FOLDER -type f  -name "*.yaml"` &
