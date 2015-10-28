@@ -2,6 +2,7 @@ from blocks.algorithms import GradientDescent, CompositeRule, Momentum, Restrict
 from blocks.extensions import FinishAfter, saveload, predicates
 from blocks.extensions.monitoring import DataStreamMonitoring, TrainingDataMonitoring
 from blocks.extensions.training import TrackTheBest
+from extras.extensions import plot
 from blocks.monitoring import aggregation
 from blocks.filter import VariableFilter
 from blocks.graph import ComputationGraph, apply_dropout, apply_noise
@@ -9,7 +10,7 @@ from blocks.initialization import Uniform, Constant
 from blocks.model import Model
 from blocks import main_loop
 from blocks.roles import INPUT, WEIGHT
-from blocks_mindlab import utils, plot
+from blocks_mindlab import utils
 from fuel.utils import do_not_pickle_attributes
 
 
