@@ -1,8 +1,10 @@
-from blocks.algorithms import GradientDescent, CompositeRule, Momentum, Restrict, VariableClipping, RMSProp, Adam
-from blocks.extensions import FinishAfter, saveload, predicates
+import numpy
+import theano
+from blocks.algorithms import GradientDescent, CompositeRule, Momentum, Restrict, VariableClipping, RMSProp, Adam, StepClipping
+from blocks.extensions import FinishAfter, saveload, predicates, Printing
 from blocks.extensions.monitoring import DataStreamMonitoring, TrainingDataMonitoring
-from blocks.extensions.training import TrackTheBest
-from extras.extensions import plot
+from blocks.extensions.training import TrackTheBest, SharedVariableModifier
+from blocks_extras.extensions import plot
 from blocks.monitoring import aggregation
 from blocks.filter import VariableFilter
 from blocks.graph import ComputationGraph, apply_dropout, apply_noise
@@ -31,17 +33,19 @@ class Experiment(object):
         self.monitored_vars = []
         self.extensions = []
         self.step_rules = []
-        self.train_stream=train_stream
-        self.dev_stream=dev_stream
+        self.train_stream = train_stream
+        self.dev_stream = dev_stream
 
     def set_momentum(self, learning_rate, momentum):
-        self.step_rules.append(Momentum(learning_rate=learning_rate, momentum=momentum))
+        self.step_rules.append(
+            Momentum(learning_rate=learning_rate, momentum=momentum))
 
     def set_rmsprop(self, learning_rate, decay_rate=0.95):
-        self.step_rules.append(RMSProp(learning_rate=learning_rate, decay_rate=decay_rate))
+        self.step_rules.append(
+            RMSProp(learning_rate=learning_rate, decay_rate=decay_rate))
 
-    def set_adam(self):
-        self.step_rules.append(Adam())
+    def set_adam(self, learning_rate):
+        self.step_rules.append(Adam(learning_rate))
 
     def initialize_layers(self, w_inits, b_inits, bricks):
         for i, brick in enumerate(bricks):
@@ -55,7 +59,7 @@ class Experiment(object):
     def set_cost(self, cost):
         cost.name = 'cost'
         self.cost = cost
-        self.cg = ComputationGraph(cost)
+        self.cg = ComputationGraph(self.cost)
 
     def monitor_perf_measures(self, y, y_hat, threshold):
         tp, tn, fp, fn, pre, rec, f_score = utils.get_measures(
@@ -69,16 +73,20 @@ class Experiment(object):
             self.monitored_vars.append(var)
         for i, W in enumerate(weights):
             var = W.norm(2, axis=0).max()
-            owner.add_auxiliary_variable(var, name='W_max_norm_weight_' + str(i))
+            owner.add_auxiliary_variable(
+                var, name='W_max_norm_weight_' + str(i))
             self.monitored_vars.append(var)
 
     def monitor_activations(self, mlp):
         var_filter = VariableFilter(theano_name_regex='linear.*output')
         outputs = var_filter(self.cg.variables)
         for i, output in enumerate(outputs):
-            mlp.add_auxiliary_variable(output.mean(), name='mean_act_' + str(i))
-            mlp.add_auxiliary_variable(output.mean(axis=0).max(), name='max_act_' + str(i))
-            mlp.add_auxiliary_variable(output.mean(axis=0).min(), name='min_act_' + str(i))
+            mlp.add_auxiliary_variable(output.mean(),
+                                       name='mean_act_' + str(i))
+            mlp.add_auxiliary_variable(output.mean(axis=0).max(),
+                                       name='max_act_' + str(i))
+            mlp.add_auxiliary_variable(output.mean(axis=0).min(),
+                                       name='min_act_' + str(i))
         self.monitored_vars.extend(mlp.auxiliary_variables)
 
     def apply_dropout(self, dropout, variables=None):
@@ -102,6 +110,25 @@ class Experiment(object):
         self.step_rules.extend([Restrict(VariableClipping(max_norm, axis=0), [w])
                                 for max_norm, w in zip(max_norms, weights)])
 
+    def clip_gradient(self, threshold):
+        """Add StepClipping rule
+
+        :threshold: max norm allowed for gradients
+        """
+        self.step_rules.append(StepClipping(threshold))
+
+    def decay_learning_rate(self, learning_rate_decay):
+        """Decay learning rate after each epoch
+
+        :learning_rate_decay: decay coeff.
+        """
+        if learning_rate_decay not in (0, 1):
+            learning_rate = self.step_rules[0].learning_rate
+            self.extensions.append(SharedVariableModifier(learning_rate,
+                                                          lambda n, lr: numpy.cast[theano.config.floatX](
+                                                          learning_rate_decay * lr),
+                                                          after_epoch=True, after_batch=False))
+
     def plot_channels(self, channels, url_bokeh, **kwargs):
         self.extensions.append(plot.Plot(self.model_name, server_url=url_bokeh,
                                channels=channels, **kwargs))
@@ -123,8 +150,13 @@ class Experiment(object):
     def finish_after(self, nepochs):
         self.extensions.append(FinishAfter(after_n_epochs=nepochs))
 
-    def get_main_loop(self):
-        algorithm = GradientDescent(cost=self.cost, parameters=self.cg.parameters,
+    def add_printing(self, **kwargs):
+        self.extensions.append(Printing(**kwargs))
+
+    def get_main_loop(self, parameters=None):
+        if parameters is None or len(parameters) == 0:
+            parameters = self.cg.parameters
+        algorithm = GradientDescent(cost=self.cost, parameters=parameters,
                                     step_rule=CompositeRule(self.step_rules))
 
         self.monitored_vars.insert(0, self.cost)
@@ -138,8 +170,8 @@ class Experiment(object):
 
         if self.dev_stream:
             dev_monitor = DataStreamMonitoring(variables=self.monitored_vars,
-                                           before_first_epoch=False, after_epoch=True,
-                                           data_stream=self.dev_stream, prefix="dev")
+                                               before_first_epoch=False, after_epoch=True,
+                                               data_stream=self.dev_stream, prefix="dev")
             self.extensions.insert(0, dev_monitor)
         train_monitor = TrainingDataMonitoring(self.monitored_vars,
                                                before_first_epoch=True,
@@ -153,3 +185,6 @@ class Experiment(object):
     def get_monitored_var(self, var_name):
         idx = [n.name for n in self.monitored_vars].index(var_name)
         return self.monitored_vars[idx]
+
+    def add_monitored_var(self, variable):
+        self.monitored_vars.append(variable)
