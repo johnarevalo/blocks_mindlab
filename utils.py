@@ -21,12 +21,3 @@ def get_measures(y_true, y_pred):
     fn.name = 'fn'
     f_score.name = 'f_score'
     return tp, tn, fp, fn, pre, rec, f_score
-
-
-def generate_url(docname, url_bokeh):
-    output_server(docname, url=url_bokeh)
-    s = cursession()
-    s.use_doc(docname)
-    d = Document()
-    s.load_document(d)
-    return s.object_link(d.context)

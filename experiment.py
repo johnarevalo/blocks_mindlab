@@ -103,10 +103,8 @@ class Experiment(object):
                                 for max_norm, w in zip(max_norms, weights)])
 
     def plot_channels(self, channels, url_bokeh, **kwargs):
-        print '{0} : {1}'.format(self.model_name, utils.generate_url(self.model_name, url_bokeh))
         self.extensions.append(plot.Plot(self.model_name, server_url=url_bokeh,
-                               channels=channels, before_first_epoch=True,
-                               **kwargs))
+                               channels=channels, **kwargs))
 
     def track_best(self, channel, save_path=None, choose_best=min):
         tracker = TrackTheBest(channel, choose_best=choose_best)
