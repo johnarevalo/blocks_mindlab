@@ -29,6 +29,8 @@ class MainLoop(main_loop.MainLoop):
 class Experiment(object):
 
     def __init__(self, model_name, train_stream, dev_stream):
+        self._algorithm = None
+        self._parameters = None
         self.model_name = model_name
         self.monitored_vars = []
         self.extensions = []
@@ -126,12 +128,12 @@ class Experiment(object):
             learning_rate = self.step_rules[0].learning_rate
             self.extensions.append(SharedVariableModifier(learning_rate,
                                                           lambda n, lr: numpy.cast[theano.config.floatX](
-                                                          learning_rate_decay * lr),
+                                                              learning_rate_decay * lr),
                                                           after_epoch=True, after_batch=False))
 
     def plot_channels(self, channels, url_bokeh, **kwargs):
         self.extensions.append(plot.Plot(self.model_name, server_url=url_bokeh,
-                               channels=channels, **kwargs))
+                                         channels=channels, **kwargs))
 
     def track_best(self, channel, save_path=None, choose_best=min):
         tracker = TrackTheBest(channel, choose_best=choose_best)
@@ -153,38 +155,48 @@ class Experiment(object):
     def add_printing(self, **kwargs):
         self.extensions.append(Printing(**kwargs))
 
-    def get_main_loop(self, parameters=None):
-        if parameters is None or len(parameters) == 0:
-            parameters = self.cg.parameters
-        algorithm = GradientDescent(cost=self.cost, parameters=parameters,
-                                    step_rule=CompositeRule(self.step_rules))
-
-        self.monitored_vars.insert(0, self.cost)
-        gradient_norm = aggregation.mean(algorithm.total_gradient_norm)
-        step_norm = aggregation.mean(algorithm.total_step_norm)
-        grad_over_step = gradient_norm / step_norm
-        grad_over_step.name = 'grad_over_step'
-        self.monitored_vars.insert(0, gradient_norm)
-        self.monitored_vars.insert(0, step_norm)
-        self.monitored_vars.insert(0, grad_over_step)
-
-        if self.dev_stream:
-            dev_monitor = DataStreamMonitoring(variables=self.monitored_vars,
-                                               before_first_epoch=False, after_epoch=True,
-                                               data_stream=self.dev_stream, prefix="dev")
-            self.extensions.insert(0, dev_monitor)
-        train_monitor = TrainingDataMonitoring(self.monitored_vars,
-                                               before_first_epoch=True,
-                                               after_epoch=True, prefix='tra')
-        self.extensions.insert(0, train_monitor)
-        self.algorithm = algorithm
-
-        return MainLoop(data_stream=self.train_stream, algorithm=algorithm,
-                        model=Model(self.cost), extensions=self.extensions)
-
     def get_monitored_var(self, var_name):
         idx = [n.name for n in self.monitored_vars].index(var_name)
         return self.monitored_vars[idx]
 
     def add_monitored_var(self, variable):
         self.monitored_vars.append(variable)
+
+    def add_stream_monitors(self, **kwargs):
+        gradient_norm = aggregation.mean(self.algorithm.total_gradient_norm)
+        step_norm = aggregation.mean(self.algorithm.total_step_norm)
+        grad_over_step = gradient_norm / step_norm
+        grad_over_step.name = 'grad_over_step'
+        self.monitored_vars.insert(0, gradient_norm)
+        self.monitored_vars.insert(0, step_norm)
+        self.monitored_vars.insert(0, grad_over_step)
+        self.monitored_vars.insert(0, self.cost)
+        train_monitor = TrainingDataMonitoring(self.monitored_vars,
+                                               prefix='tra', **kwargs)
+        self.extensions.insert(0, train_monitor)
+        if self.dev_stream:
+            dev_monitor = DataStreamMonitoring(variables=self.monitored_vars,
+                                               data_stream=self.dev_stream, prefix="dev", **kwargs)
+            self.extensions.insert(0, dev_monitor)
+
+    @property
+    def parameters(self):
+        if self._parameters is None:
+            self._parameters = self.cg.parameters
+        return self._parameters
+
+    @parameters.setter
+    def parameters(self, parameters):
+        self._parameters = parameters
+
+    @property
+    def algorithm(self):
+        if self._algorithm is None:
+            self._algorithm = GradientDescent(cost=self.cost,
+                                              parameters=self.parameters,
+                                              step_rule=CompositeRule(self.step_rules))
+        return self._algorithm
+
+    def get_main_loop(self):
+        return MainLoop(data_stream=self.train_stream, algorithm=self.algorithm,
+                        model=Model(self.cost), extensions=self.extensions)
