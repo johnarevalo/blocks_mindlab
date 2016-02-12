@@ -1,1 +1,4 @@
 *.pyc
+build/
+dist/
+blocks_mindlab.egg-info/

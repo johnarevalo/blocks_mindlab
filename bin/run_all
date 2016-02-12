@@ -1,11 +1,11 @@
 #!/bin/bash
 if [ "$#" -ne 4  ]; then
-    echo "USAGE: run_all.sh [script] [directory] [n_jobs] [logdir]"
+    echo "USAGE: run_all [script] [directory] [n_jobs] [logdir]"
     exit 1
 fi
 JOBS=$3
 if [ $JOBS -gt 1 ]; then
-    JOB_BASH=$( dirname $( readlink -f $0 ) )/job.sh
+    JOB_BASH=$( dirname $( readlink -f $0 ) )/job
     SCRIPT="$JOB_BASH $1"
 else
     SCRIPT="$1"
