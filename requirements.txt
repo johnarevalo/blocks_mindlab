@@ -1,0 +1,14 @@
+Cython>=0.20
+nose2>=0.5.0
+
+--allow-external fuel
+--allow-unverified fuel
+git+https://github.com/mila-udem/fuel#egg=fuel
+
+--allow-external blocks
+--allow-unverified blocks
+git+https://github.com/mila-udem/fuel#egg=blocks
+
+--allow-external theano
+--allow-unverified theano
+git+https://github.com/Theano/Theano.git#egg=theano
