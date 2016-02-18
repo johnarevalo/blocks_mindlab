@@ -1,7 +1,7 @@
 import numpy
 import theano
 from blocks.algorithms import GradientDescent, CompositeRule, Momentum, Restrict, VariableClipping, RMSProp, Adam, StepClipping
-from blocks.extensions import FinishAfter, saveload, predicates, Printing
+from blocks.extensions import FinishAfter, saveload, predicates, Printing, Timing
 from blocks.extensions.monitoring import DataStreamMonitoring, TrainingDataMonitoring
 from blocks.extensions.training import TrackTheBest, SharedVariableModifier
 from blocks_extras.extensions import plot
@@ -154,6 +154,9 @@ class Experiment(object):
 
     def add_printing(self, **kwargs):
         self.extensions.append(Printing(**kwargs))
+
+    def add_timing(self, **kwargs):
+        self.extensions.append(Timing(**kwargs))
 
     def get_monitored_var(self, var_name):
         idx = [n.name for n in self.monitored_vars].index(var_name)
