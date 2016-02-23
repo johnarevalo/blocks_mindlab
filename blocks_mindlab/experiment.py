@@ -194,6 +194,9 @@ class Experiment(object):
     def parameters(self, parameters):
         self._parameters = parameters
 
+    def get_num_params(self):
+        return sum([c.size for c in self.parameters]).eval()
+
     @property
     def algorithm(self):
         if self._algorithm is None:
