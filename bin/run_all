@@ -13,4 +13,4 @@ fi
 echo $SCRIPT
 FOLDER=$2
 LOGDIR=$4
-parallel --results $LOGDIR -j $JOBS $SCRIPT ::: `find $FOLDER -type f  -name "*.yaml" | sort` &
+parallel --results $LOGDIR -j $JOBS $SCRIPT ::: `find $FOLDER -type f  -name "*.json" | sort` &

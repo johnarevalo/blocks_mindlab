@@ -12,6 +12,6 @@ setup(
     packages=find_packages(exclude=['tests']),
     install_requires=['blocks', 'blocks_extras'],
     extras_require={'test': ['mock', 'nose', 'nose2'], },
-    scripts=['bin/run_all'],
+    scripts=['bin/run_all', 'bin/job'],
     zip_safe=False,
 )
