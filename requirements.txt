@@ -9,8 +9,8 @@ git+https://github.com/mila-udem/fuel#egg=fuel
 --allow-unverified blocks
 git+https://github.com/mila-udem/blocks#egg=blocks
 
---allow-external blocks
---allow-unverified blocks
+--allow-external blocks-extras
+--allow-unverified blocks-extras
 git+https://github.com/mila-udem/blocks-extras#egg=blocks_extras
 
 --allow-external theano
