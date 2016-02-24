@@ -165,7 +165,7 @@ class Experiment(object):
     def add_monitored_vars(self, variables):
         self.monitored_vars.extend(variables)
 
-    def add_aggregation_norm_vars(self):
+    def add_norm_grads_vars(self):
         gradient_norm = aggregation.mean(self.algorithm.total_gradient_norm)
         step_norm = aggregation.mean(self.algorithm.total_step_norm)
         grad_over_step = gradient_norm / step_norm
