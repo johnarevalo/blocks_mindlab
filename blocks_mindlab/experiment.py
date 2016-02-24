@@ -162,8 +162,8 @@ class Experiment(object):
         idx = [n.name for n in self.monitored_vars].index(var_name)
         return self.monitored_vars[idx]
 
-    def add_monitored_var(self, variable):
-        self.monitored_vars.append(variable)
+    def add_monitored_vars(self, variables):
+        self.monitored_vars.extend(variables)
 
     def add_aggregation_norm_vars():
         gradient_norm = aggregation.mean(self.algorithm.total_gradient_norm)
