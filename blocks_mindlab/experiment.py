@@ -165,17 +165,16 @@ class Experiment(object):
     def add_monitored_vars(self, variables):
         self.monitored_vars.extend(variables)
 
-    def add_aggregation_norm_vars():
+    def add_aggregation_norm_vars(self):
         gradient_norm = aggregation.mean(self.algorithm.total_gradient_norm)
         step_norm = aggregation.mean(self.algorithm.total_step_norm)
         grad_over_step = gradient_norm / step_norm
         grad_over_step.name = 'grad_over_step'
-        self.monitored_vars.insert(0, gradient_norm)
-        self.monitored_vars.insert(0, step_norm)
-        self.monitored_vars.insert(0, grad_over_step)
-        self.monitored_vars.insert(0, self.cost)
+        self.monitored_vars[0:0] = [gradient_norm, step_norm, grad_over_step]
 
     def add_stream_monitors(self, **kwargs):
+        if self.cost not in self.monitored_vars:
+            self.monitored_vars.insert(0, self.cost)
         train_monitor = TrainingDataMonitoring(self.monitored_vars,
                                                prefix='tra', **kwargs)
         self.extensions.insert(0, train_monitor)
