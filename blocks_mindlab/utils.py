@@ -42,3 +42,15 @@ def plot_confusion_matrix(y_true, y_pred, target_names, outfile,
     pyplot.xlabel('Predicted label')
     pyplot.savefig(outfile)
     pyplot.close()
+
+
+def plot_learning_curve(train_scores, valid_scores, X_range, xlabel, ylabel, outfile):
+    pyplot.figure()
+    pyplot.plot(X_range, train_scores, 'b-', label='Train')
+    pyplot.plot(X_range, valid_scores, 'g-', label='Valid')
+    pyplot.gca().set_ylim(0.4, 1)
+    pyplot.legend()
+    pyplot.xlabel(xlabel)
+    pyplot.ylabel(ylabel)
+    pyplot.savefig(outfile)
+    pyplot.close()
