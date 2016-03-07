@@ -1,7 +1,13 @@
 import numpy
+import operator
 from matplotlib import pyplot
-from theano import tensor
 from sklearn import metrics
+from theano import tensor
+
+
+def sort_dict(dic, reverse=True, by_value=True):
+    sort_by = 1 if by_value else 0
+    return sorted(dic.items(), key=operator.itemgetter(sort_by), reverse=reverse)
 
 
 def get_measures(y_true, y_pred):

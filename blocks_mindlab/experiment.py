@@ -139,8 +139,8 @@ class Experiment(object):
         tracker = TrackTheBest(channel, choose_best=choose_best)
         self.extensions.append(tracker)
         if save_path:
-            checkpoint = saveload.Checkpoint(
-                save_path, after_training=False, use_cpickle=True)
+            checkpoint = saveload.Checkpoint(save_path, after_training=False,
+                   use_cpickle=True)
             checkpoint.add_condition(["after_epoch"],
                                      predicate=predicates.OnLogRecord('{0}_best_so_far'.format(channel)))
             self.extensions.append(checkpoint)
