@@ -12,7 +12,7 @@ from blocks.initialization import Uniform, Constant
 from blocks.model import Model
 from blocks import main_loop
 from blocks.roles import INPUT, WEIGHT
-from blocks_mindlab import utils
+from blocks_mindlab import utils, monitor
 from fuel.utils import do_not_pickle_attributes
 
 
@@ -33,6 +33,7 @@ class Experiment(object):
         self._parameters = None
         self.model_name = model_name
         self.monitored_vars = []
+        self.quantity_inits = []
         self.extensions = []
         self.step_rules = []
         self.train_stream = train_stream
@@ -63,21 +64,25 @@ class Experiment(object):
         self.cost = cost
         self.cg = ComputationGraph(self.cost)
 
-    def monitor_perf_measures(self, y, y_hat, threshold):
-        tp, tn, fp, fn, pre, rec, f_score = utils.get_measures(
-            y.flatten(), y_hat.flatten() > threshold)
-        self.monitored_vars.extend([f_score, tp, tn, fp, fn])
+    def monitor_f_score(self, y, y_hat, threshold, average):
+        inits = (monitor.FScoreQuantity, {
+            'average': average,
+            'threshold': threshold,
+            'requires': [y, y_hat],
+            'name': 'f_score'
+        })
+        self.quantity_inits.append(inits)
 
     def monitor_w_norms(self, bricks=[], weights=[], owner=None):
         for i, brick in enumerate(bricks):
             var = brick.W.norm(2, axis=0).max()
             brick.add_auxiliary_variable(var, name='W_max_norm_' + brick.name)
-            self.monitored_vars.append(var)
+            self.add_monitored_vars([var])
         for i, W in enumerate(weights):
             var = W.norm(2, axis=0).max()
             owner.add_auxiliary_variable(
                 var, name='W_max_norm_weight_' + str(i))
-            self.monitored_vars.append(var)
+            self.add_monitored_vars([var])
 
     def monitor_activations(self, mlp):
         var_filter = VariableFilter(theano_name_regex='linear.*output')
@@ -89,7 +94,7 @@ class Experiment(object):
                                        name='max_act_' + str(i))
             mlp.add_auxiliary_variable(output.mean(axis=0).min(),
                                        name='min_act_' + str(i))
-        self.monitored_vars.extend(mlp.auxiliary_variables)
+        self.add_monitored_vars(mlp.auxiliary_variables)
 
     def apply_dropout(self, dropout, variables=None):
         if dropout and dropout > 0:
@@ -140,7 +145,7 @@ class Experiment(object):
         self.extensions.append(tracker)
         if save_path:
             checkpoint = saveload.Checkpoint(save_path, after_training=False,
-                   use_cpickle=True)
+                                             use_cpickle=True)
             checkpoint.add_condition(["after_epoch"],
                                      predicate=predicates.OnLogRecord('{0}_best_so_far'.format(channel)))
             self.extensions.append(checkpoint)
@@ -170,16 +175,22 @@ class Experiment(object):
         step_norm = aggregation.mean(self.algorithm.total_step_norm)
         grad_over_step = gradient_norm / step_norm
         grad_over_step.name = 'grad_over_step'
-        self.monitored_vars[0:0] = [gradient_norm, step_norm, grad_over_step]
+        self.add_monitored_vars([gradient_norm, step_norm, grad_over_step])
+
+    def get_quantitites_vars(self):
+        quantities = []
+        for cls, kwargs_ in self.quantity_inits:
+            quantities.append(cls(*[], **kwargs_))
+        return quantities
 
     def add_stream_monitors(self, **kwargs):
         if self.cost not in self.monitored_vars:
             self.monitored_vars.insert(0, self.cost)
-        train_monitor = TrainingDataMonitoring(self.monitored_vars,
+        train_monitor = TrainingDataMonitoring(self.monitored_vars + self.get_quantitites_vars(),
                                                prefix='tra', **kwargs)
         self.extensions.insert(0, train_monitor)
         if self.dev_stream:
-            dev_monitor = DataStreamMonitoring(variables=self.monitored_vars,
+            dev_monitor = DataStreamMonitoring(variables=self.monitored_vars + self.get_quantitites_vars(),
                                                data_stream=self.dev_stream, prefix="dev", **kwargs)
             self.extensions.insert(0, dev_monitor)
 

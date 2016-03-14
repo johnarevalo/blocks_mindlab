@@ -10,24 +10,6 @@ def sort_dict(dic, reverse=True, by_value=True):
     return sorted(dic.items(), key=operator.itemgetter(sort_by), reverse=reverse)
 
 
-def get_measures(y_true, y_pred):
-    tp = (tensor.eq(y_pred + y_true, 2)).sum()
-    tn = (tensor.eq(y_pred + y_true, 0)).sum()
-    fp = (tensor.eq(y_pred - y_true, 1)).sum()
-    fn = (tensor.eq(y_true - y_pred, 1)).sum()
-    f_score = 2. * tp / (2. * tp + fp + fn)
-    pre = tp / (tp + fp)
-    rec = tp / (tp + fn)
-    pre.name = 'pre'
-    rec.name = 'rec'
-    tp.name = 'tp'
-    tn.name = 'tn'
-    fp.name = 'fp'
-    fn.name = 'fn'
-    f_score.name = 'f_score'
-    return tp, tn, fp, fn, pre, rec, f_score
-
-
 def plot_confusion_matrix(y_true, y_pred, target_names, outfile,
                           title='Confusion matrix', cmap=pyplot.cm.Blues):
     acc = metrics.accuracy_score(y_true, y_pred)
