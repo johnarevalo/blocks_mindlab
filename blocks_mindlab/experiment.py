@@ -13,6 +13,7 @@ from blocks.model import Model
 from blocks import main_loop
 from blocks.roles import INPUT, WEIGHT
 from blocks_mindlab import utils, monitor
+from blocks.monitoring.aggregation import MonitoredQuantity
 from fuel.utils import do_not_pickle_attributes
 
 
@@ -64,12 +65,12 @@ class Experiment(object):
         self.cost = cost
         self.cg = ComputationGraph(self.cost)
 
-    def monitor_f_score(self, y, y_hat, threshold, average):
+    def monitor_f_score(self, y, y_hat, threshold, average, name='f_score'):
         inits = (monitor.FScoreQuantity, {
             'average': average,
             'threshold': threshold,
             'requires': [y, y_hat],
-            'name': 'f_score'
+            'name': name
         })
         self.quantity_inits.append(inits)
 

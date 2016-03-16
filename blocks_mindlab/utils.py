@@ -20,7 +20,7 @@ def plot_confusion_matrix(y_true, y_pred, target_names, outfile,
         for j, c in enumerate(cas):
             if c > 0:
                 pyplot.text(j - .2, i + .2, c, fontsize=14)
-    pyplot.title(title)
+    pyplot.title(title, fontsize='smaller')
     pyplot.colorbar()
     tick_marks = numpy.arange(len(target_names))
     pyplot.xticks(tick_marks, target_names, rotation=90)
