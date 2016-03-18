@@ -74,6 +74,13 @@ class Experiment(object):
         })
         self.quantity_inits.append(inits)
 
+    def monitor_auc_score(self, y, y_hat, name='auc'):
+        inits = (monitor.AUCQuantity, {
+            'requires': [y, y_hat],
+            'name': name
+        })
+        self.quantity_inits.append(inits)
+
     def monitor_w_norms(self, bricks=[], weights=[], owner=None):
         for i, brick in enumerate(bricks):
             var = brick.W.norm(2, axis=0).max()
