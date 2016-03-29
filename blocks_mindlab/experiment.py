@@ -29,7 +29,7 @@ class MainLoop(main_loop.MainLoop):
 
 class Experiment(object):
 
-    def __init__(self, model_name, train_stream, dev_stream):
+    def __init__(self, model_name, train_stream):
         self._algorithm = None
         self._parameters = None
         self.model_name = model_name
@@ -38,7 +38,6 @@ class Experiment(object):
         self.extensions = []
         self.step_rules = []
         self.train_stream = train_stream
-        self.dev_stream = dev_stream
 
     def set_momentum(self, learning_rate, momentum):
         self.step_rules.append(
@@ -60,11 +59,6 @@ class Experiment(object):
                 brick.biases_init = Uniform(width=b_inits[i])
             brick.initialize()
 
-    def set_cost(self, cost):
-        cost.name = 'cost'
-        self.cost = cost
-        self.cg = ComputationGraph(self.cost)
-
     def monitor_f_score(self, y, y_hat, threshold, average, name='f_score'):
         inits = (monitor.FScoreQuantity, {
             'average': average,
@@ -74,9 +68,10 @@ class Experiment(object):
         })
         self.quantity_inits.append(inits)
 
-    def monitor_auc_score(self, y, y_hat, name='auc'):
+    def monitor_auc_score(self, y, y_hat, average, name='auc'):
         inits = (monitor.AUCQuantity, {
             'requires': [y, y_hat],
+            'average': average,
             'name': name
         })
         self.quantity_inits.append(inits)
@@ -110,14 +105,14 @@ class Experiment(object):
                 var_filter = VariableFilter(theano_name_regex='linear.*input_')
                 variables = var_filter(self.cg.variables)
             self.cg = apply_dropout(self.cg, variables, dropout)
-            self.cost = self.cg.outputs[0]
+            self._cost = self.cg.outputs[0]
 
     def apply_noise(self, noise, weights=None):
         if noise and noise > 0:
             if weights == None:
                 weights = VariableFilter(roles=[WEIGHT])(self.cg.variables)
             self.cg = apply_noise(self.cg, weights, noise)
-            self.cost = self.cg.outputs[0]
+            self._cost = self.cg.outputs[0]
 
     def regularize_max_norm(self, max_norms, weights=None):
         if weights == None:
@@ -191,16 +186,15 @@ class Experiment(object):
             quantities.append(cls(*[], **kwargs_))
         return quantities
 
-    def add_stream_monitors(self, **kwargs):
-        if self.cost not in self.monitored_vars:
-            self.monitored_vars.insert(0, self.cost)
-        train_monitor = TrainingDataMonitoring(self.monitored_vars + self.get_quantitites_vars(),
-                                               prefix='tra', **kwargs)
-        self.extensions.insert(0, train_monitor)
-        if self.dev_stream:
-            dev_monitor = DataStreamMonitoring(variables=self.monitored_vars + self.get_quantitites_vars(),
-                                               data_stream=self.dev_stream, prefix="dev", **kwargs)
-            self.extensions.insert(0, dev_monitor)
+    def monitor_stream(self, stream, prefix, **kwargs):
+        variables = self.monitored_vars + self.get_quantitites_vars()
+        if stream == self.train_stream:
+            monitor = TrainingDataMonitoring(
+                variables, prefix=prefix, **kwargs)
+        else:
+            monitor = DataStreamMonitoring(
+                variables, data_stream=stream, prefix=prefix, **kwargs)
+        self.extensions.insert(0, monitor)
 
     @property
     def parameters(self):
@@ -211,6 +205,18 @@ class Experiment(object):
     @parameters.setter
     def parameters(self, parameters):
         self._parameters = parameters
+
+    @property
+    def cost(self):
+        return self._cost
+
+    @cost.setter
+    def cost(self, cost):
+        cost.name = 'cost'
+        self._cost = cost
+        self.cg = ComputationGraph(self._cost)
+        if self._cost not in self.monitored_vars:
+            self.monitored_vars.insert(0, self._cost)
 
     def get_num_params(self):
         return sum([c.size for c in self.parameters]).eval()
