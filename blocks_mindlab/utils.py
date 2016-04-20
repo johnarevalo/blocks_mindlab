@@ -1,8 +1,9 @@
 import numpy
 import operator
+import codecs
 from matplotlib import pyplot
 from sklearn import metrics
-from theano import tensor
+from sklearn.cross_validation import StratifiedShuffleSplit
 
 
 def sort_dict(dic, reverse=True, by_value=True):
@@ -42,3 +43,19 @@ def plot_learning_curve(train_scores, valid_scores, X_range, xlabel, ylabel, out
     pyplot.ylabel(ylabel)
     pyplot.savefig(outfile)
     pyplot.close()
+
+
+def read_file(filename, encoding='utf-8'):
+    with codecs.open(filename, mode='r', encoding=encoding) as infile:
+        return infile.read()
+
+
+def split_dataset(X, Y, test_size):
+    sss = StratifiedShuffleSplit(
+        Y, n_iter=1, test_size=test_size, random_state=0)
+    X = numpy.array(X)
+    Y = numpy.array(Y)
+    train_index, test_index = next(sss.__iter__())
+    X_train, X_test, Y_train, Y_test =\
+        X[train_index], X[test_index], Y[train_index], Y[test_index]
+    return X_train, Y_train, X_test, Y_test
