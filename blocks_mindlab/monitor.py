@@ -32,9 +32,13 @@ class AUCQuantity(MonitoredQuantity):
         self.total_auc_score, self.examples_seen = 0.0, 0
 
     def aggregate(self, y, y_hat):
-        self.total_auc_score += metrics.roc_auc_score(y, y_hat,
-                                                      average=self.average)
+        try:
+            self.total_auc_score += metrics.roc_auc_score(y, y_hat,
+                                                          average=self.average)
+        except:
+            pass
         self.examples_seen += 1
+
 
     def get_aggregated_value(self):
         res = self.total_auc_score / self.examples_seen
