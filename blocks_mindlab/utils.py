@@ -1,6 +1,7 @@
 import numpy
 import operator
 import codecs
+import re
 from matplotlib import pyplot
 from sklearn import metrics
 from sklearn.cross_validation import StratifiedShuffleSplit
@@ -59,3 +60,19 @@ def split_dataset(X, Y, test_size):
     X_train, X_test, Y_train, Y_test =\
         X[train_index], X[test_index], Y[train_index], Y[test_index]
     return X_train, Y_train, X_test, Y_test
+
+
+def get_windows(M, window_size, stride):
+    data = [M[i:i + window_size]
+            for i in range(window_size, M.shape[0] - window_size, stride)]
+    return numpy.concatenate([d[numpy.newaxis, ...] for d in data])
+
+
+def normalizeText(text):
+    text = text.lower()
+    text = re.sub(r'<br />', r' ', text).strip()
+    text = re.sub(r'^https?:\/\/.*[\r\n]*', ' L ', text, flags=re.MULTILINE)
+    text = re.sub(r'[\~\*\+\^`_#\[\]]', r' ', text).strip()
+    text = re.sub(r'[0-9]+', r' N ', text).strip()
+    text = re.sub(r'([/\'\-\.?!\(\)",:;])', r' \1 ', text).strip()
+    return text.split()
