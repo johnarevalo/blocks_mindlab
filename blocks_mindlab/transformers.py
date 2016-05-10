@@ -62,7 +62,7 @@ class PairwiseTransformer(Transformer):
                 continue
 
             if source_batch.shape[0] % 2 != 0:
-                raise ValueError('batch_size must be even.')
+                source_batch = source_batch[:-1]
             half_batch = source_batch.shape[0] / 2
 
             first_batch = source_batch[0:half_batch]
