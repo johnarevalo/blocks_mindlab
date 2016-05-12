@@ -35,18 +35,16 @@ class SequenceTransposer(AgnosticSourcewiseTransformer):
 
 class PairwiseTransformer(Transformer):
 
-    def __init__(self, data_stream, which_sources=None, **kwargs):
+    def __init__(self, data_stream, target_source, **kwargs):
         super(PairwiseTransformer, self).__init__(
             data_stream, produces_examples=False, **kwargs)
-        if which_sources is None:
-            which_sources = self.data_stream.sources
-        self.which_sources = which_sources
+        self.target_source = target_source
 
     @property
     def sources(self):
         sources = []
         for source in self.data_stream.sources:
-            if source in self.which_sources:
+            if source != self.target_source:
                 sources.append(source + '_1')
                 sources.append(source + '_2')
             else:
@@ -57,16 +55,14 @@ class PairwiseTransformer(Transformer):
         batches = []
         for i, (source, source_batch) in enumerate(
                 zip(self.data_stream.sources, batch)):
-            if source not in self.which_sources:
-                batches.append(source_batch)
-                continue
-
             if source_batch.shape[0] % 2 != 0:
                 source_batch = source_batch[:-1]
             half_batch = source_batch.shape[0] / 2
-
             first_batch = source_batch[0:half_batch]
             second_batch = source_batch[half_batch:]
-            batches.extend([first_batch, second_batch])
-
+            if source == self.target_source:
+                targets = numpy.equal(first_batch, second_batch)
+                batches.append(targets)
+            else:
+                batches.extend([first_batch, second_batch])
         return tuple(batches)
