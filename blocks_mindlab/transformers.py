@@ -1,5 +1,6 @@
 import numpy
 from fuel.transformers import AgnosticSourcewiseTransformer, Transformer
+from .utils import sort_dict
 
 
 class OneHotTransformer(AgnosticSourcewiseTransformer):

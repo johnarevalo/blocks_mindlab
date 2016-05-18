@@ -64,7 +64,7 @@ def split_dataset(X, Y, test_size):
 
 def get_windows(M, window_size, stride):
     data = [M[i:i + window_size]
-            for i in range(window_size, M.shape[0] - window_size, stride)]
+            for i in range(0, M.shape[0] - window_size + 1, stride)]
     return numpy.concatenate([d[numpy.newaxis, ...] for d in data])
 
 

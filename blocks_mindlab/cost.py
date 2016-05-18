@@ -21,3 +21,15 @@ class NDimensionalMAPError(MAPError):
 
 class NDimensionalSquaredError(SquaredError):
     decorators = [WithExtraDims()]
+
+
+class ContrastiveLoss(Cost):
+
+    def __init__(self, margin):
+        self.margin = margin
+        super(ContrastiveLoss, self).__init__()
+
+    @application(inputs=['y', 'h_1', 'h_2'], outputs=["cost"])
+    def apply(self, y, h_1, h_2, **kwargs):
+        dist = ((h_1 - h_2) ** 2).sum(axis=1)
+        return y * dist + (1 - y) * theano.tensor.maximum(self.margin - dist, 0)

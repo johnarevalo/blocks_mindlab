@@ -1,6 +1,6 @@
 import numpy
 import theano
-from blocks.algorithms import GradientDescent, CompositeRule, Momentum, Restrict, VariableClipping, RMSProp, Adam, StepClipping
+from blocks.algorithms import GradientDescent, CompositeRule, Momentum, Restrict, VariableClipping, RMSProp, Adam, StepClipping, Scale
 from blocks.extensions import FinishAfter, saveload, predicates, Printing, Timing
 from blocks.extensions.monitoring import DataStreamMonitoring, TrainingDataMonitoring
 from blocks.extensions.training import TrackTheBest, SharedVariableModifier
@@ -49,6 +49,9 @@ class Experiment(object):
 
     def set_adam(self, learning_rate):
         self.step_rules.append(Adam(learning_rate))
+
+    def set_scale(self, learning_rate):
+        self.step_rules.append(Scale(learning_rate))
 
     def initialize_layers(self, w_inits, b_inits, bricks):
         for i, brick in enumerate(bricks):
