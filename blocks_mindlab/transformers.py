@@ -58,7 +58,7 @@ class PairwiseTransformer(Transformer):
                 zip(self.data_stream.sources, batch)):
             if source_batch.shape[0] % 2 != 0:
                 source_batch = source_batch[:-1]
-            half_batch = source_batch.shape[0] / 2
+            half_batch = int(source_batch.shape[0] / 2)
             first_batch = source_batch[0:half_batch]
             second_batch = source_batch[half_batch:]
             if source == self.target_source:
