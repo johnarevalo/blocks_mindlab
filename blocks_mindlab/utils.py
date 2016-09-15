@@ -72,7 +72,7 @@ def normalizeText(text):
     text = text.lower()
     text = re.sub(r'<br />', r' ', text).strip()
     text = re.sub(r'^https?:\/\/.*[\r\n]*', ' L ', text, flags=re.MULTILINE)
-    text = re.sub(r'[\~\*\+\^`_#\[\]]', r' ', text).strip()
+    text = re.sub(r'[\~\*\+\^`_#\[\]|]', r' ', text).strip()
     text = re.sub(r'[0-9]+', r' N ', text).strip()
     text = re.sub(r'([/\'\-\.?!\(\)",:;])', r' \1 ', text).strip()
     return text.split()
