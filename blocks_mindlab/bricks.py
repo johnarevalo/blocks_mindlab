@@ -1,4 +1,5 @@
-from blocks.bricks import Softmax, Linear, Logistic, Initializable, application
+from blocks.bricks import (Softmax, Linear, Logistic, Initializable,
+                           application, Brick, Sequence, BatchNormalization)
 from blocks import initialization
 
 
@@ -37,3 +38,20 @@ class FCLogistic(Initializable):
         linear_output = self.linear.apply(h)
         y_hat = self.logistic.apply(linear_output)
         return y_hat, linear_output
+
+
+class TransposeBN(Brick):
+
+    @application(inputs=['h'], outputs=['output'])
+    def apply(self, h):
+        return h.transpose(1, 0, 2)
+
+
+class RecurrentBN(Sequence, Initializable):
+
+    def __init__(self, input_dim, **kwargs):
+        super(RecurrentBN, self).__init__([
+            TransposeBN().apply,
+            BatchNormalization(input_dim=input_dim).apply,
+            TransposeBN().apply,
+        ])

@@ -25,6 +25,9 @@ class NDimensionalSquaredError(SquaredError):
 
 class ContrastiveLoss(Cost):
 
+    """
+    Implementation of Hadsell et al. 2005 Contrastive loss function
+    """
     def __init__(self, margin):
         self.margin = margin
         super(ContrastiveLoss, self).__init__()
