@@ -1,3 +1,4 @@
+import nltk
 import numpy
 from fuel.transformers import AgnosticSourcewiseTransformer, Transformer
 from .utils import sort_dict
@@ -67,3 +68,46 @@ class PairwiseTransformer(Transformer):
             else:
                 batches.extend([first_batch, second_batch])
         return tuple(batches)
+
+
+class SentTokenizer(Transformer):
+
+    def __init__(self, word_to_ix, ix_to_word, data_stream, which_source, **kwargs):
+        if not data_stream.produces_examples:
+            raise ValueError('the wrapped data stream must produce examples, '
+                             'not batches of examples.')
+
+        self.which_source = which_source
+        self.word_to_ix = word_to_ix
+        self.ix_to_word = ix_to_word
+        super(SentTokenizer, self).__init__(data_stream, produces_examples=True,
+                                            **kwargs)
+
+    @property
+    def sources(self):
+        sources = []
+        for source in self.data_stream.sources:
+            sources.append(source)
+            if source == self.which_source:
+                sources.append(source + '_mask')
+        return tuple(sources)
+
+    def transform_example(self, source_example):
+        example_with_mask = []
+        for source, example in zip(self.data_stream.sources, source_example):
+            if source != self.which_source:
+                example_with_mask.append(example)
+                continue
+            sentences = nltk.sent_tokenize(
+                ' '.join([self.ix_to_word[ix] for ix in example]))
+            sentences = [[self.word_to_ix[w] for w in sent.split()]
+                         for sent in sentences]
+            max_length = max([len(s) for s in sentences])
+            batch = numpy.zeros((len(sentences), max_length), dtype='float32')
+            mask = numpy.zeros((len(sentences), max_length), dtype='float32')
+            for i, s in enumerate(sentences):
+                batch[i, :len(s)] = s
+                mask[i, :len(s)] = 1
+            example_with_mask.append(batch)
+            example_with_mask.append(mask)
+        return tuple(example_with_mask)
