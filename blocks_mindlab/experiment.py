@@ -1,6 +1,6 @@
 import numpy
 import theano
-from blocks.algorithms import GradientDescent, CompositeRule, Momentum, Restrict, VariableClipping, RMSProp, Adam, StepClipping, Scale
+from blocks.algorithms import GradientDescent, CompositeRule, Momentum, Restrict, VariableClipping, RMSProp, Adam, StepClipping, Scale, AdaGrad
 from blocks.extensions import FinishAfter, saveload, predicates, Printing, Timing
 from blocks.extensions.monitoring import DataStreamMonitoring, TrainingDataMonitoring
 from blocks.extensions.training import TrackTheBest, SharedVariableModifier
@@ -49,6 +49,9 @@ class Experiment(object):
 
     def set_adam(self, learning_rate):
         self.step_rules.append(Adam(learning_rate))
+
+    def set_adagrad(self, learning_rate):
+        self.step_rules.append(AdaGrad(learning_rate))
 
     def set_scale(self, learning_rate):
         self.step_rules.append(Scale(learning_rate))
@@ -122,6 +125,13 @@ class Experiment(object):
             weights = VariableFilter(roles=[WEIGHT])(self.cg.variables)
         self.step_rules.extend([Restrict(VariableClipping(max_norm, axis=0), [w])
                                 for max_norm, w in zip(max_norms, weights)])
+
+    def regularize_l2(self, lmbda, weights=None):
+        if weights == None:
+            weights = VariableFilter(roles=[WEIGHT])(self.cg.variables)
+        reg_term = theano.tensor.sum([(W ** 2).sum() for W in weights])
+        self.cost.name = 'unreg_cost'
+        self.cost = self.cost + lmbda * reg_term
 
     def clip_gradient(self, threshold):
         """Add StepClipping rule
