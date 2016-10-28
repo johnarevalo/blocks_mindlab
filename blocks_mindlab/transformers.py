@@ -103,7 +103,7 @@ class SentTokenizer(Transformer):
             sentences = [[self.word_to_ix[w] for w in sent.split()]
                          for sent in sentences]
             max_length = max([len(s) for s in sentences])
-            batch = numpy.zeros((len(sentences), max_length), dtype='float32')
+            batch = numpy.zeros((len(sentences), max_length), dtype=example.dtype)
             mask = numpy.zeros((len(sentences), max_length), dtype='float32')
             for i, s in enumerate(sentences):
                 batch[i, :len(s)] = s
