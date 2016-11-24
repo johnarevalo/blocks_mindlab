@@ -124,7 +124,7 @@ class Experiment(object):
         if weights == None:
             weights = VariableFilter(roles=[WEIGHT])(self.cg.variables)
         self.step_rules.extend([Restrict(VariableClipping(max_norm, axis=0), [w])
-                                for max_norm, w in zip(max_norms, weights)])
+                                for max_norm, w in zip(max_norms, weights) if max_norm > 0.0])
 
     def regularize_l2(self, lmbda, weights=None):
         if weights == None:
