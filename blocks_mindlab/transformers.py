@@ -1,7 +1,8 @@
 import nltk
 import numpy
-from fuel.transformers import AgnosticSourcewiseTransformer, Transformer
+from fuel.transformers import AgnosticSourcewiseTransformer, Transformer, SourcewiseTransformer
 from .utils import sort_dict
+from PIL import Image, ImageOps
 
 
 class OneHotTransformer(AgnosticSourcewiseTransformer):
@@ -103,7 +104,8 @@ class SentTokenizer(Transformer):
             sentences = [[self.word_to_ix[w] for w in sent.split()]
                          for sent in sentences]
             max_length = max([len(s) for s in sentences])
-            batch = numpy.zeros((len(sentences), max_length), dtype=example.dtype)
+            batch = numpy.zeros(
+                (len(sentences), max_length), dtype=example.dtype)
             mask = numpy.zeros((len(sentences), max_length), dtype='float32')
             for i, s in enumerate(sentences):
                 batch[i, :len(s)] = s
@@ -111,3 +113,32 @@ class SentTokenizer(Transformer):
             example_with_mask.append(batch)
             example_with_mask.append(mask)
         return tuple(example_with_mask)
+
+
+class Resizer(SourcewiseTransformer):
+
+    def __init__(self, data_stream, shape, **kwargs):
+        self.shape = shape
+        super(Resizer, self).__init__(
+            data_stream, data_stream.produces_examples, **kwargs)
+
+    def transform_source_example(self, source_example, source_name):
+        out = numpy.empty(
+            (source_example.shape[0],) + self.shape, dtype=source_example.dtype)
+        if source_example.shape[0] in [1, 3]:
+            img = Image.fromarray(source_example.transpose(1, 2, 0))
+            img = ImageOps.fit(img, self.shape)
+            out[...] = numpy.asarray(img).transpose(2, 0, 1)
+        else:
+            for i in range(source_example.shape[0]):
+                img = Image.fromarray(source_example[i])
+                img = ImageOps.fit(img, self.shape)
+                out[i] = numpy.asarray(img)
+        return out
+
+    def transform_source_batch(self, source_batch, source_name):
+        out = []
+        for source_example in source_batch:
+            out.append(self.transform_source_example(
+                source_example, source_name))
+        return numpy.asarray(out)
