@@ -156,12 +156,12 @@ class Experiment(object):
         self.extensions.append(plot.Plot(self.model_name, server_url=url_bokeh,
                                          channels=channels, **kwargs))
 
-    def track_best(self, channel, save_path=None, choose_best=min):
+    def track_best(self, channel, save_path=None, choose_best=min, save_main_loop=True):
         tracker = TrackTheBest(channel, choose_best=choose_best)
         self.extensions.append(tracker)
         if save_path:
             checkpoint = saveload.Checkpoint(save_path, after_training=False,
-                                             use_cpickle=True)
+                                             use_cpickle=True, save_main_loop=save_main_loop)
             checkpoint.add_condition(["after_epoch"],
                                      predicate=predicates.OnLogRecord('{0}_best_so_far'.format(channel)))
             self.extensions.append(checkpoint)

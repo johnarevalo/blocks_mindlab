@@ -119,6 +119,7 @@ class Resizer(SourcewiseTransformer):
 
     def __init__(self, data_stream, shape, **kwargs):
         self.shape = shape
+        kwargs.setdefault('axis_labels', data_stream.axis_labels)
         super(Resizer, self).__init__(
             data_stream, data_stream.produces_examples, **kwargs)
 
@@ -127,12 +128,12 @@ class Resizer(SourcewiseTransformer):
             (source_example.shape[0],) + self.shape, dtype=source_example.dtype)
         if source_example.shape[0] in [1, 3]:
             img = Image.fromarray(source_example.transpose(1, 2, 0))
-            img = ImageOps.fit(img, self.shape)
+            img = img.resize(self.shape)
             out[...] = numpy.asarray(img).transpose(2, 0, 1)
         else:
             for i in range(source_example.shape[0]):
                 img = Image.fromarray(source_example[i])
-                img = ImageOps.fit(img, self.shape)
+                img = img.resize(self.shape)
                 out[i] = numpy.asarray(img)
         return out
 
